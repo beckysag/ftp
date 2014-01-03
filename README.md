@@ -47,11 +47,6 @@ To run ftclient:
 
 Logging In:
 ```
-	Name: user   
-	Password: pass
-```
-	OR 
-```
 	Name: anonymous
 	Password: [empty]
 ```
