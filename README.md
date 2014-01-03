@@ -46,19 +46,12 @@ To run ftclient:
 ```
 
 Logging In:
+```
 	Name: user   
 	Password: pass
-
+```
 	OR 
-
+```
 	Name: anonymous
 	Password: [empty]
-
-
-Extra Credit
- 1. Multi-process, concurrent server (see line 28 in ftserve.c)
- 2. Username/password access to server
-	  A hidden file on the server contains username and password combinations. 
-	  Before a client is allowed to access the server, their username and password must be validated.
-	  Pre-set account details are listed above. 
- 3. ls -l style directory listing (for command "list")
+```
