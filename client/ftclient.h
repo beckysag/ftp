@@ -1,12 +1,11 @@
 /* ftclient.h
  *
  * Rebecca Sagalyn
- * CS372, Program 1
  * 11/15/13
  *
  * Client side of TCP file transfer implementation, runs with custom server, 
  * ftserve.c. Receives commands from input, and retreives list of files in current 
- * and files. Allows user to log in.
+ * and files. 
    * 
  * Valid commands: 
  *    get <filename>
