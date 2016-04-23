@@ -101,17 +101,18 @@ int ftclient_get(int data_sock, int sock_control, char* arg)
 {
     char data[MAXSIZE];
     int size;
-	FILE* fd = fopen(arg, "w");
+    FILE* fd = fopen(arg, "w");
     
     while ((size = recv(data_sock, data, MAXSIZE, 0)) > 0) {
         fwrite(data, 1, size, fd);
     }
 
-    if (size < 0)
+    if (size < 0) {
         perror("error\n");
+    }
 
     fclose(fd);
-	return 0;	
+    return 0;
 }
 
 
@@ -122,12 +123,13 @@ int ftclient_open_conn(int sock_con)
 {
 	int sock_listen = socket_create(CLIENT_PORT_ID);
 
-	/* send an ACK on control conn */
+	// send an ACK on control conn
 	int ack = 1;
 	if ((send(sock_con, (char*) &ack, sizeof(ack), 0)) < 0) {
 		printf("client: ack write error :%d\n", errno);
 		exit(1);
 	}		
+
 	int sock_conn = socket_accept(sock_listen);
 	close(sock_listen);
 	return sock_conn;
@@ -145,21 +147,23 @@ int ftclient_list(int sock_data, int sock_con)
 	char buf[MAXSIZE];			// hold a filename received from server
 	int tmp = 0;
 
-	/* Wait for server starting message */
+	// Wait for server starting message
 	if (recv(sock_con, &tmp, sizeof tmp, 0) < 0) {
 		perror("client: error reading message from server\n");
 		return -1;
 	}
 	
 	memset(buf, 0, sizeof(buf));
-    while ((num_recvd = recv(sock_data, buf, MAXSIZE, 0)) > 0) {
-        printf("%s", buf);
+	while ((num_recvd = recv(sock_data, buf, MAXSIZE, 0)) > 0) {
+        	printf("%s", buf);
 		memset(buf, 0, sizeof(buf));
-    }
-    if (num_recvd < 0)
-        perror("error");
+	}
+	
+	if (num_recvd < 0) {
+	        perror("error");
+	}
 
-	/* Wait for server done message */
+	// Wait for server done message
 	if (recv(sock_con, &tmp, sizeof tmp, 0) < 0) {
 		perror("client: error reading message from server\n");
 		return -1;
@@ -260,8 +264,7 @@ int main(int argc, char* argv[])
 	char *host = argv[1];
 	char *port = argv[2];
 
-
-	/* Get matching addresses */
+	// Get matching addresses
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
@@ -272,7 +275,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	
-	/* Find an address to connect to & connect */
+	// Find an address to connect to & connect
 	for (rp = res; rp != NULL; rp = rp->ai_next) {
 		sock_control = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 
@@ -286,11 +289,11 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 		close(sock_control);
-    }    
+	}
 	freeaddrinfo(rp);
 
 
-	/* Get connection, welcome messages */
+	// Get connection, welcome messages
 	printf("Connected to %s.\n", host);
 	print_reply(read_reply()); 
 	
@@ -298,7 +301,7 @@ int main(int argc, char* argv[])
 	/* Get name and password and send to server */
 	ftclient_login();
 
-	while (1) { /* loop until user types quit */
+	while (1) { // loop until user types quit
 
 		// Get a command from user
 		if ( ftclient_read_command(buffer, sizeof buffer, &cmd) < 0) {
@@ -320,13 +323,13 @@ int main(int argc, char* argv[])
 		}
 		
 		if (retcode == 502) {
-			/* If invalid command, show error message */
+			// If invalid command, show error message
 			printf("%d Invalid command.\n", retcode);
 		} else {			
-			/* Command is valid (RC = 200), process command */
+			// Command is valid (RC = 200), process command
 		
-			/* open data connection */
-			if ((data_sock = ftclient_open_conn(sock_control)) < 0){
+			// open data connection
+			if ((data_sock = ftclient_open_conn(sock_control)) < 0) {
 				perror("Error opening socket for data connection");
 				exit(1);
 			}			
@@ -350,7 +353,7 @@ int main(int argc, char* argv[])
 
 	} // loop back to get more user input
 
-	/* Close the socket (control connection) */
+	// Close the socket (control connection)
 	close(sock_control);
     return 0;  
 }
