@@ -12,19 +12,19 @@ int main(int argc, char *argv[])
 
 	port = atoi(argv[1]);
 
-	/* create socket */
-	if ((sock_listen = socket_create(port)) < 0 ){
+	// create socket
+	if ((sock_listen = socket_create(port)) < 0 ) {
 		perror("Error creating socket");
 		exit(1);
 	}		
 	
-	while(1) {	/* wait for client request */
+	while(1) {	// wait for client request
 
-		/* create new socket for control connection */
+		// create new socket for control connection
 		if ((sock_control = socket_accept(sock_listen))	< 0 )
 			break;			
 		
-		/* create child process to do actual file transfer */
+		// create child process to do actual file transfer
 		if ((pid = fork()) < 0) { 
 			perror("Error forking child process");
 		} else if (pid == 0) { 
@@ -101,12 +101,14 @@ int ftserve_list(int sock_data, int sock_control)
 	FILE* fd;
 
 	int rs = system("ls -l | tail -n+2 > tmp.txt");
-	if ( rs < 0)
+	if ( rs < 0) {
 		exit(1);
+	}
 	
 	fd = fopen("tmp.txt", "r");	
-	if (!fd) 
+	if (!fd) {
 		exit(1);
+	}
 
 	/* Seek to the beginning of the file */
 	fseek(fd, SEEK_SET, 0);
@@ -115,10 +117,11 @@ int ftserve_list(int sock_data, int sock_control)
 
 	memset(data, 0, MAXSIZE);
 	while ((num_read = fread(data, 1, MAXSIZE, fd)) > 0) {
-        if (send(sock_data, data, num_read, 0) < 0)
-            perror("err");
+		if (send(sock_data, data, num_read, 0) < 0) {
+			perror("err");
+		}
 		memset(data, 0, MAXSIZE);
-    }
+	}
 
 	fclose(fd);
 
@@ -142,19 +145,19 @@ int ftserve_start_data_conn(int sock_control)
 	char buf[1024];	
 	int wait, sock_data;
 
-	/* Wait for go-ahead on control conn */
+	// Wait for go-ahead on control conn
 	if (recv(sock_control, &wait, sizeof wait, 0) < 0 ) {
 		perror("Error while waiting");
 		return -1;
 	}
 
-	/* Get client address */
+	// Get client address
 	struct sockaddr_in client_addr;
-    socklen_t len = sizeof client_addr;
+	socklen_t len = sizeof client_addr;
 	getpeername(sock_control, (struct sockaddr*)&client_addr, &len);
 	inet_ntop(AF_INET, &client_addr.sin_addr, buf, sizeof(buf));
 
-	/* Initiate data connection with client */
+	// Initiate data connection with client
 	if ((sock_data = socket_connect(CLIENT_PORT_ID, buf)) < 0)
 		return -1;
 
@@ -228,7 +231,7 @@ int ftserve_login(int sock_control)
 	memset(pass, 0, MAXSIZE);
 	memset(buf, 0, MAXSIZE);
 	
-	/* Wait to recieve username */
+	// Wait to recieve username
 	if ( (recv_data(sock_control, buf, sizeof(buf)) ) == -1) {
 		perror("recv error\n"); 
 		exit(1);
@@ -242,7 +245,7 @@ int ftserve_login(int sock_control)
 	// tell client we're ready for password
 	send_response(sock_control, 331);					
 	
-	/* Wait to recieve password */
+	// Wait to recieve password
 	memset(buf, 0, MAXSIZE);
 	if ( (recv_data(sock_control, buf, sizeof(buf)) ) == -1) {
 		perror("recv error\n"); 
@@ -251,8 +254,9 @@ int ftserve_login(int sock_control)
 	
 	i = 5;
 	n = 0;
-	while (buf[i] != 0)
+	while (buf[i] != 0) {
 		pass[n++] = buf[i++];
+	}
 	
 	return (ftserve_check_user(user, pass));
 }
@@ -275,7 +279,7 @@ int ftserve_recv_cmd(int sock_control, char*cmd, char*arg)
 	memset(cmd, 0, 5);
 	memset(arg, 0, MAXSIZE);
 		
-	/* Wait to recieve command */
+	// Wait to recieve command
 	if ((recv_data(sock_control, buffer, sizeof(buffer)) ) == -1) {
 		perror("recv error\n"); 
 		return -1;
@@ -285,7 +289,7 @@ int ftserve_recv_cmd(int sock_control, char*cmd, char*arg)
 	char *tmp = buffer + 5;
 	strcpy(arg, tmp);
 	
-	if (strcmp(cmd, "QUIT")==0){
+	if (strcmp(cmd, "QUIT")==0) {
 		rc = 221;
 	} else if((strcmp(cmd, "USER")==0) || (strcmp(cmd, "PASS")==0) ||
 			(strcmp(cmd, "LIST")==0) || (strcmp(cmd, "RETR")==0)) {
@@ -307,44 +311,45 @@ int ftserve_recv_cmd(int sock_control, char*cmd, char*arg)
  * Child process handles connection to client
  */
 void ftserve_process(int sock_control)
-{		
+{
 	int sock_data;
 	char cmd[5];
 	char arg[MAXSIZE];
-		
-	/* Send welcome message */
-	send_response(sock_control, 220);	
 
-	/* Authenticate user */
-	if (ftserve_login(sock_control) == 1){
-		send_response(sock_control, 230);	
-	} else {			
+	// Send welcome message
+	send_response(sock_control, 220);
+
+	// Authenticate user
+	if (ftserve_login(sock_control) == 1) {
+		send_response(sock_control, 230);
+	} else {
 		send_response(sock_control, 430);	
 		exit(0);
 	}	
 	
-	while (1) {				
-		/* Wait for command */
+	while (1) {
+		// Wait for command
 		int rc = ftserve_recv_cmd(sock_control, cmd, arg);
 		
-		if ((rc < 0) || (rc == 221))
-			break;	
+		if ((rc < 0) || (rc == 221)) {
+			break;
+		}
 		
-		if (rc == 200 ) {	
-			/* Open data connection with client */
+		if (rc == 200 ) {
+			// Open data connection with client
 			if ((sock_data = ftserve_start_data_conn(sock_control)) < 0) {
 				close(sock_control);
 				exit(1); 
 			}
 
-			/* Execute command */
-			if (strcmp(cmd, "LIST")==0){ /* Do list */
+			// Execute command
+			if (strcmp(cmd, "LIST")==0) { // Do list
 				ftserve_list(sock_data, sock_control);
-			} else if (strcmp(cmd, "RETR")==0){ /* Do get <filename> */
+			} else if (strcmp(cmd, "RETR")==0) { // Do get <filename>
 				ftserve_retr(sock_control, sock_data, arg);
 			}
 		
-			/* Close data connection */
+			// Close data connection
 			close(sock_data);
 		} 
 	}
